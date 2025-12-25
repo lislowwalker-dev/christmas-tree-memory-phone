@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Nebula Christmas Tree - AI Vision Pro</title>
+    <!-- 引入手写字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <!-- 引入动画库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+    <style>
+        /* --- 核心 UI 样式 --- */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000;
+            background: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #050505 60%, #000000 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        
+        #ui-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        /* --- 顶部金色标题 --- */
+        #christmas-title {
+            position: absolute;
+            top: 30px; 
+            width: 100%;
+            text-align: center;
+            font-family: 'Great Vibes', cursive; 
+            font-size: max(48px, 5vw); 
+            color: #ffd700; 
+            text-shadow: 
+                0 0 10px rgba(255, 215, 0, 0.8), 
+                0 0 20px rgba(218, 165, 32, 0.5), 
+                2px 2px 4px rgba(0,0,0,0.5); 
+            z-index: 20;
+            pointer-events: none;
+            letter-spacing: 2px;
+            opacity: 0; 
+            animation: fadeInTitle 3s ease-out forwards 1s;
+        }
+
+        @keyframes fadeInTitle {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- 左侧手势指南 (带关闭按钮) --- */
+        #gesture-guide {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            width: 180px;
+            background: rgba(10, 5, 20, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            pointer-events: auto; 
+            color: #eee;
+            font-size: 12px;
+            opacity: 0;
+            animation: fadeInGuide 1s ease-out forwards 2s; 
+        }
+        
+        @keyframes fadeInGuide {
+            from { opacity: 0; transform: translate(-20px, -50%); }
+            to { opacity: 1; transform: translate(0, -50%); }
+        }
+
+        .close-guide {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 20px;
+            color: #aaa;
+            cursor: pointer;
+            z-index: 100;
+            font-weight: bold;
+        }
+        .close-guide:hover { color: #fff; }
+
+        .guide-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .guide-item:last-child { margin-bottom: 0; }
+        
+        .guide-icon {
+            font-size: 18px;
+            margin-right: 10px;
+            width: 25px;
+            text-align: center;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+        
+        .guide-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .guide-title {
+            color: #d4af37;
+            font-weight: 600;
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+        
+        .guide-desc {
+            color: #aaa;
+            font-size: 10px;
+            line-height: 1.2;
+        }
+
+        /* --- 加载屏幕 --- */
+        #loading {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #d4af37;
+            font-size: 16px;
+            text-align: center;
+            background: rgba(10, 5, 20, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 30px 50px;
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            pointer-events: auto;
+            transition: opacity 0.5s;
+            box-shadow: 0 0 50px rgba(138, 43, 226, 0.2);
+            min-width: 240px;
+        }
+
+        /* --- 按钮控件 --- */
+        .controls {
+            position: absolute; bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 20px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            background: rgba(20, 10, 30, 0.6);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            padding: 12px 24px;
+            cursor: pointer;
+            border-radius: 30px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.4s;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        .btn:hover { 
+            background: rgba(255, 215, 0, 0.1); 
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4); 
+            transform: scale(1.05);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* --- 摄像头预览 (镜像) --- */
+        #camera-preview {
+            position: absolute; top: 20px; right: 20px;
+            width: 160px; height: 120px;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            border-radius: 8px;
+            transform: scaleX(-1); 
+            opacity: 0.5;
+            transition: opacity 0.3s;
+            z-index: 11;
+            pointer-events: auto;
+            object-fit: cover;
+        }
+        #camera-preview:hover { opacity: 1; }
+
+        /* --- 状态显示 --- */
+        #status {
+            position: absolute; top: 20px; left: 20px;
+            color: #eee;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border-left: 2px solid #d4af37;
+            font-weight: 300;
+            max-width: 300px;
+        }
+        
+        .instruction { color: #888; font-size: 12px; margin-top: 5px; letter-spacing: 0.5px; line-height: 1.4; }
+        .highlight { color: #d4af37; font-weight: 600; text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); display: block; font-size: 14px;}
+
+        /* --- 提示弹窗 --- */
+        #toast-container {
+            position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
+            z-index: 200; pointer-events: none;
+            display: flex; flex-direction: column; gap: 10px;
+            width: 80%;
+            align-items: center;
+        }
+        .toast {
+            background: rgba(10, 5, 20, 0.9);
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            animation: fadeInOut 3s forwards;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        #file-input { display: none; }
+    </style>
+    
+    <!-- Three.js 依赖 -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+
+    <video id="input-video" style="display:none" playsinline></video>
+    <canvas id="camera-preview"></canvas>
+    
+    <!-- 无音乐版本 -->
+
+    <div id="ui-container">
+        <!-- 顶部标题 -->
+        <div id="christmas-title">Merry Christmas</div>
+
+        <div id="toast-container"></div>
+
+        <!-- 状态栏 -->
+        <div id="status">
+            <div>
+                <span style="font-size:12px; color:#aaa;">状态 / STATUS</span>
+                <span id="current-state" class="highlight">初始化中...<br><span style="font-size:11px; font-weight:400; opacity:0.8;">Initializing...</span></span>
+            </div>
+            <div id="gesture-name" class="instruction">
+                等待模型加载...<br>Waiting for model...
+            </div>
+        </div>
+
+        <!-- 左侧手势指南 (带关闭按钮) -->
+        <div id="gesture-guide">
+            <div class="close-guide" onclick="document.getElementById('gesture-guide').style.display='none'">×</div>
+            
+            <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 10px; font-size: 11px; letter-spacing: 1px; color: #888; text-transform: uppercase;">
+                手势指南 / GUIDES
+            </div>
+            
+            <div class="guide-item">
+                <div class="guide-icon">👌</div>
+                <div class="guide-text">
+                    <span class="guide-title">捏合 / Pinch</span>
+                    <span class="guide-desc">锁定特写<br>Lock Photo</span>
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="guide-icon">👋</div>
+                <div class="guide-text">
+                    <span class="guide-title">松手 / Release</span>
+                    <span class="guide-desc">退出特写<br>Exit Zoom</span>
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="guide-icon">✊</div>
+                <div class="guide-text">
+                    <span class="guide-title">握拳 / Fist</span>
+                    <span class="guide-desc">圣诞树<br>Tree Mode</span>
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="guide-icon">🖐️</div>
+                <div class="guide-text">
+                    <span class="guide-title">张开 / Open</span>
+                    <span class="guide-desc">星云扩散<br>Nebula Mode</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载界面 -->
+        <div id="loading">
+            <div id="loading-text">
+                正在初始化视觉引擎 (GPU)...<br>
+                <span style="font-size:12px; color:#666">Initializing Visual Engine...</span>
+            </div>
+            <div style="font-size: 12px; color:#888; margin-top: 15px;">
+                需开启摄像头权限<br>Camera Access Required
+            </div>
+            <button id="start-btn" class="btn" style="margin-top:25px; display:none">
+                开启沉浸体验<br><span style="font-size:10px">Start Experience</span>
+            </button>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div class="controls">
+            <button class="btn" onclick="document.getElementById('file-input').click()">
+                上传记忆 (+)<br><span style="font-size:10px">Upload Memories</span>
+            </button>
+            <input type="file" id="file-input" multiple accept="image/*">
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { FilesetResolver, HandLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/+esm';
+
+        // --- Configuration ---
+        const CONFIG = {
+            colors: {
+                green: 0x0a3d1b, gold: 0xffcc00, red: 0x990000, white: 0xffffff,
+                nebulaPurple: 0x4B0082, nebulaBlue: 0x00BFFF
+            },
+            particleCount: 750, treeHeight: 45, treeRadius: 18,
+            bloomStrength: 2.2, bloomRadius: 0.6, bloomThreshold: 0.15,
+            photoCountTarget: 15 // Target number of photo frames
+        };
+
+        const STATE = {
+            mode: 'TREE', isHandDetected: false, gesture: 'NONE', 
+            photos: [], objects: [], materials: {}, sparkles: null,
+            innerSparkleSystem: null, ambientDust: null,
+            lastZoomTarget: null,
+            // Gesture Debounce & Stability
+            gestureBuffer: [], 
+            gestureBufferLimit: 5,
+            lastPinchTime: 0 
+        };
+
+        // --- Custom UI Helpers ---
+        window.showToast = (msg) => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            // Allow HTML in toast for bilingual support
+            toast.innerHTML = msg;
+            container.appendChild(toast);
+            setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3000);
+        };
+
+        // --- Shaders ---
+        const sparkVertexShader = `
+        uniform float time; uniform float mixRatio;
+        attribute vec3 aTreePos; attribute vec3 aChaosPos; attribute float aPhase;
+        varying float vAlpha;
+        void main() {
+            vec3 pos = mix(aTreePos, aChaosPos, mixRatio);
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            float twinkle = 1.0 + 0.6 * sin(time * 3.0 + aPhase);
+            gl_PointSize = (1.8 * twinkle) * (300.0 / -mvPosition.z);
+            vAlpha = 0.4 + 0.6 * sin(time * 2.0 + aPhase * 13.0);
+        }`;
+        const sparkFragmentShader = `
+        uniform vec3 color; varying float vAlpha;
+        void main() {
+            vec2 coord = gl_PointCoord - vec2(0.5);
+            if(length(coord) > 0.5) discard;
+            float strength = 1.0 - (length(coord) * 2.0);
+            gl_FragColor = vec4(color, vAlpha * pow(strength, 1.5));
+        }`;
+
+        // --- AI & Three.js Vars ---
+        let scene, camera, renderer, composer, controls, raycaster, bloomPass;
+        let particleGroup, starPoints;
+        let handLandmarker = undefined;
+        let runningMode = "VIDEO";
+        let lastVideoTime = -1;
+
+        // --- Main Init ---
+        init();
+        initMediaPipe(); 
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050208, 0.015);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 75);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.body.appendChild(renderer.domElement);
+
+            const renderScene = new RenderPass(scene, camera);
+            bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = CONFIG.bloomThreshold; bloomPass.strength = CONFIG.bloomStrength; bloomPass.radius = CONFIG.bloomRadius;
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene); composer.addPass(bloomPass);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; 
+            controls.autoRotate = false; 
+            controls.autoRotateSpeed = 0.5;
+
+            // Lights
+            scene.add(new THREE.HemisphereLight(0xffeeb1, 0x080820, 0.15));
+            const coreLight = new THREE.PointLight(0xffaa00, 1.0, 50); coreLight.position.set(0, 10, 0); scene.add(coreLight);
+            const topShadowLight = new THREE.DirectionalLight(0xffffff, 6.0); topShadowLight.position.set(0, 80, 0); topShadowLight.lookAt(0,0,0); scene.add(topShadowLight);
+            const dl1 = new THREE.DirectionalLight(0xffd700, 0.8); dl1.position.set(-20, 10, 20); scene.add(dl1);
+            const dl2 = new THREE.DirectionalLight(0xffaa33, 0.5); dl2.position.set(20, -10, -10); scene.add(dl2);
+
+            raycaster = new THREE.Raycaster();
+
+            generateBackgroundStars();
+            generateParticles();
+            generateAmbientDust();
+
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('file-input').addEventListener('change', handleImageUpload);
+            animate();
+        }
+
+        // --- MediaPipe Integration ---
+        async function initMediaPipe() {
+            try {
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+                );
+                
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+                        delegate: "GPU"
+                    },
+                    runningMode: runningMode,
+                    numHands: 1
+                });
+
+                document.getElementById('loading-text').innerHTML = `
+                    视觉模型加载完毕<br>
+                    <span style="font-size:12px; color:#666">Visual Model Loaded</span>
+                `;
+                document.getElementById('start-btn').style.display = 'block';
+                document.getElementById('start-btn').addEventListener('click', enableCam);
+            } catch (error) {
+                console.error("MediaPipe Init Error:", error);
+                document.getElementById('loading-text').innerHTML = `
+                    模型加载失败，请刷新<br>
+                    <span style="font-size:12px; color:#666">Model Load Failed, Refresh</span>
+                `;
+            }
+        }
+
+        function enableCam() {
+            const video = document.getElementById('input-video');
+            const startBtn = document.getElementById('start-btn');
+            
+            startBtn.style.display = 'none';
+            document.getElementById('loading-text').innerHTML = `
+                正在连接视觉神经...<br>
+                <span style="font-size:12px; color:#666">Connecting Visual Network...</span>
+            `;
+
+            const constraints = { video: true };
+            
+            navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play().then(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        predictWebcam();
+                    }).catch(e => {
+                        console.error("Video Play Error:", e);
+                    });
+                };
+            }).catch(err => {
+                console.error("Camera Access Error:", err);
+                window.showToast("无法开启摄像头 / Camera Access Denied");
+                startBtn.style.display = 'block'; 
+                document.getElementById('loading-text').innerHTML = `
+                    连接失败，请点击重试<br>
+                    <span style="font-size:12px; color:#666">Connection Failed, Retry</span>
+                `;
+            });
+        }
+
+        async function predictWebcam() {
+            const video = document.getElementById('input-video');
+            const canvas = document.getElementById('camera-preview');
+            const ctx = canvas.getContext('2d');
+            
+            if (!video.videoWidth || !video.videoHeight || video.paused) {
+                window.requestAnimationFrame(predictWebcam);
+                return;
+            }
+
+            if (canvas.width !== video.videoWidth) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
+
+            if (handLandmarker && video.currentTime !== lastVideoTime) {
+                lastVideoTime = video.currentTime;
+                try {
+                    const results = await handLandmarker.detectForVideo(video, performance.now());
+                    
+                    ctx.save();
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    if (results.landmarks.length > 0) {
+                        STATE.isHandDetected = true;
+                        processGestures(results.landmarks[0]); 
+                        drawLandmarks(ctx, results.landmarks[0]);
+                    } else {
+                        STATE.isHandDetected = false;
+                    }
+                    ctx.restore();
+                } catch (e) {
+                    console.warn("Detection skipped:", e);
+                }
+            }
+            window.requestAnimationFrame(predictWebcam);
+        }
+
+        // --- Gesture Recognition Algorithms ---
+        function processGestures(landmarks) {
+            const dist = (i, j) => Math.hypot(landmarks[i].x - landmarks[j].x, landmarks[i].y - landmarks[j].y, landmarks[i].z - landmarks[j].z);
+            let rawGesture = 'NONE';
+            
+            const tips = [8, 12, 16, 20];
+            let avgDistToWrist = 0;
+            tips.forEach(t => avgDistToWrist += dist(t, 0));
+            avgDistToWrist /= tips.length;
+
+            const pinchDist = dist(4, 8); 
+            const indexToWrist = dist(8, 0);
+
+            const isPinching = pinchDist < 0.08; 
+            const isNotFist = indexToWrist > 0.3;
+
+            if (isPinching && isNotFist) {
+                rawGesture = 'PINCH';
+            } else if (avgDistToWrist < 0.25) {
+                rawGesture = 'FIST';
+            } else if (avgDistToWrist > 0.4) {
+                rawGesture = 'OPEN';
+            }
+
+            STATE.gestureBuffer.push(rawGesture);
+            if(STATE.gestureBuffer.length > STATE.gestureBufferLimit) {
+                STATE.gestureBuffer.shift();
+            }
+
+            const counts = {};
+            STATE.gestureBuffer.forEach(g => counts[g] = (counts[g] || 0) + 1);
+            
+            let stableGesture = 'NONE';
+            for (const g in counts) {
+                if (counts[g] > STATE.gestureBufferLimit * 0.7) { 
+                    stableGesture = g;
+                }
+            }
+
+            const statusEl = document.getElementById('gesture-name');
+            const now = performance.now();
+
+            // --- Bilingual Status Updates ---
+            if (stableGesture === 'PINCH') {
+                STATE.lastPinchTime = now; 
+                statusEl.innerHTML = "手势: 捏合 (锁定)<br>Gesture: Pinch (Locking)";
+                handleCenterZoomInteraction();
+            } else {
+                if (STATE.mode === 'PHOTO_ZOOM') {
+                    if (now - STATE.lastPinchTime < 1200) {
+                        statusEl.innerHTML = "手势: 信号微弱...<br>Gesture: Signal Weak...";
+                    } else {
+                        switchState('TREE'); 
+                        statusEl.innerHTML = "手势: 释放 (归位)<br>Gesture: Release (Return)";
+                    }
+                } else {
+                    if (stableGesture === 'FIST') {
+                        statusEl.innerHTML = "手势: 握拳 (聚合)<br>Gesture: Fist (Aggregate)";
+                        if (STATE.mode !== 'TREE') switchState('TREE');
+                    } else if (stableGesture === 'OPEN') {
+                        statusEl.innerHTML = "手势: 张开 (散开)<br>Gesture: Open (Scatter)";
+                        if (STATE.mode !== 'CHAOS') switchState('CHAOS');
+                    } else {
+                        statusEl.innerHTML = "手势: 无指令<br>Gesture: None";
+                    }
+                }
+            }
+
+            if (STATE.mode === 'CHAOS') {
+                const palmX = landmarks[9].x;
+                const palmY = landmarks[9].y;
+                const targetRotY = (palmX - 0.5) * Math.PI * 2;
+                const targetRotX = (palmY - 0.5) * Math.PI * 0.5;
+
+                gsap.to(particleGroup.rotation, {
+                    y: targetRotY,
+                    x: targetRotX,
+                    duration: 1.0,
+                    ease: "power2.out"
+                });
+            }
+        }
+
+        function handleCenterZoomInteraction() {
+            if (STATE.mode !== 'PHOTO_ZOOM') {
+                let closestDist = Infinity;
+                let target = null;
+
+                const photos = STATE.objects.filter(o => o.userData.isPhoto);
+                
+                photos.forEach(obj => {
+                    const pos = new THREE.Vector3();
+                    obj.getWorldPosition(pos);
+                    pos.project(camera);
+                    const d = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+                    if (d < closestDist && pos.z < 1.0 && pos.z > -1.0) { 
+                        closestDist = d;
+                        target = obj;
+                    }
+                });
+
+                if (target) {
+                     while(target.parent && !target.userData.isPhoto) {
+                        target = target.parent;
+                    }
+                    STATE.lastZoomTarget = target;
+                    switchState('PHOTO_ZOOM', target);
+                }
+            }
+        }
+
+        function drawLandmarks(ctx, landmarks) {
+            ctx.fillStyle = '#00ffff'; 
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            const connections = [[0,1],[1,2],[2,3],[3,4], [0,5],[5,6],[6,7],[7,8], [0,9],[9,10],[10,11],[11,12], [0,13],[13,14],[14,15],[15,16], [0,17],[17,18],[18,19],[19,20], [5,9],[9,13],[13,17]];
+            
+            ctx.beginPath();
+            for (const [i, j] of connections) {
+                const x1 = landmarks[i].x * ctx.canvas.width;
+                const y1 = landmarks[i].y * ctx.canvas.height;
+                const x2 = landmarks[j].x * ctx.canvas.width;
+                const y2 = landmarks[j].y * ctx.canvas.height;
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+            }
+            ctx.stroke();
+            for (const lm of landmarks) {
+                ctx.beginPath();
+                ctx.arc(lm.x * ctx.canvas.width, lm.y * ctx.canvas.height, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        // --- Content Generation ---
+        function createRealisticCandyTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#f8f8f8'; ctx.fillRect(0,0,512,512);
+            const gradient = ctx.createLinearGradient(0,0,512,0);
+            gradient.addColorStop(0, '#cc0000'); gradient.addColorStop(0.5, '#ff0000'); gradient.addColorStop(1, '#cc0000');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            for(let i=-512; i<1024; i+=128) { ctx.moveTo(i, 0); ctx.lineTo(i+60, 0); ctx.lineTo(i+60-256, 512); ctx.lineTo(i-256, 512); ctx.closePath(); }
+            ctx.fill();
+            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(2, 4);
+            return tex;
+        }
+        function createGeometricBumpMap() {
+            const c = document.createElement('canvas'); c.width = c.height = 256; const ctx = c.getContext('2d');
+            ctx.fillStyle = '#101010'; ctx.fillRect(0,0,256,256);
+            for(let y=0;y<256;y+=32) for(let x=0;x<256;x+=32) {
+                const g = ctx.createRadialGradient(x+16,y+16,0,x+16,y+16,21); g.addColorStop(0,'#fff'); g.addColorStop(1,'#000'); ctx.fillStyle=g; ctx.fillRect(x,y,32,32);
+            }
+            const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2,2); return t;
+        }
+        function createDefaultPhotoTexture() {
+            const c = document.createElement('canvas'); c.width = c.height = 512; const ctx = c.getContext('2d');
+            
+            // --- UPDATED: DARK PLACEHOLDER TEXTURE ---
+            ctx.fillStyle = "#050505"; ctx.fillRect(0,0,512,512);
+            ctx.strokeStyle = "#333"; ctx.lineWidth=2;
+            ctx.strokeRect(10,10,492,492);
+            ctx.fillStyle = "#444"; 
+            ctx.font = "bold 30px sans-serif"; 
+            ctx.textAlign="center"; 
+            
+            // Bilingual Text
+            ctx.fillText("等待记忆上传...", 256, 240);
+            ctx.font = "20px sans-serif";
+            ctx.fillText("Waiting for Memory Upload...", 256, 280);
+            
+            return new THREE.CanvasTexture(c);
+        }
+        function createRefinedCandyCaneGeo() {
+            const path = new THREE.CatmullRomCurve3([ new THREE.Vector3(0,-1.2,0), new THREE.Vector3(0,0.8,0), new THREE.Vector3(0.05,1.2,0), new THREE.Vector3(0.4,1.35,0), new THREE.Vector3(0.7,1.0,0) ]);
+            return new THREE.TubeGeometry(path, 32, 0.14, 16, false);
+        }
+        function createBellGeometry() {
+            const points = [new THREE.Vector2(0,0.4), new THREE.Vector2(0.15,0.35), new THREE.Vector2(0.2,0.2), new THREE.Vector2(0.25,0.05), new THREE.Vector2(0.4,0.0), new THREE.Vector2(0.38,0.0), new THREE.Vector2(0.23,0.05), new THREE.Vector2(0.18,0.2), new THREE.Vector2(0.13,0.35), new THREE.Vector2(0,0.38)];
+            const geo = new THREE.LatheGeometry(points, 24); geo.scale(2,2,2); geo.center(); return geo;
+        }
+        
+        function createFrameGeometry(w, h) {
+            const shp = new THREE.Shape();
+            shp.moveTo(-w/2, -h/2); shp.lineTo(w/2, -h/2); shp.lineTo(w/2, h/2); shp.lineTo(-w/2, h/2); shp.lineTo(-w/2, -h/2);
+            
+            const hole = new THREE.Path(); 
+            const b = 0.25; // Border thickness
+            const innerW = w - 2*b;
+            const innerH = h - 2*b;
+            
+            hole.moveTo(-innerW/2, -innerH/2);
+            hole.lineTo(innerW/2, -innerH/2);
+            hole.lineTo(innerW/2, innerH/2);
+            hole.lineTo(-innerW/2, innerH/2);
+            hole.lineTo(-innerW/2, -innerH/2);
+            
+            shp.holes.push(hole);
+            const geo = new THREE.ExtrudeGeometry(shp, {depth:0.15, bevelEnabled:true, bevelThickness:0.1, bevelSize:0.1, bevelSegments:2}); 
+            geo.center(); 
+            return geo;
+        }
+
+        function generateBackgroundStars() {
+            const pos=[], col=[]; const geom = new THREE.BufferGeometry();
+            for(let i=0;i<2000;i++) {
+                const r=100+Math.random()*200, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+                pos.push(r*Math.sin(ph)*Math.cos(th), r*Math.sin(ph)*Math.sin(th), r*Math.cos(ph));
+                const t=Math.random(); col.push(...(t>0.8?[0.5,0.8,1]:(t>0.6?[1,0.9,0.5]:[1,1,1])));
+            }
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(pos,3)); geom.setAttribute('color', new THREE.Float32BufferAttribute(col,3));
+            starPoints = new THREE.Points(geom, new THREE.PointsMaterial({size:0.5, vertexColors:true, transparent:true, opacity:0.8}));
+            scene.add(starPoints);
+        }
+
+        function generateParticles() {
+            particleGroup = new THREE.Group(); scene.add(particleGroup);
+            
+            STATE.materials.cane = new THREE.MeshPhysicalMaterial({ map:createRealisticCandyTexture(), color:0xffffff, roughness:0.2, metalness:0, clearcoat:1, emissive:0x222222 });
+            
+            STATE.materials.gold = new THREE.MeshPhysicalMaterial({ 
+                color:CONFIG.colors.gold, 
+                roughness:0.45,      
+                metalness:0.5,       
+                clearcoat:0.1,       
+                emissive:CONFIG.colors.gold, 
+                emissiveIntensity:0.1 
+            });
+            STATE.materials.red = new THREE.MeshPhysicalMaterial({ color:0xd90015, roughness:0.3, metalness:0.4, transmission:0, clearcoat:1, clearcoatRoughness:0.1, emissive:0x330000, emissiveIntensity:0.1, side:THREE.DoubleSide });
+            STATE.materials.green = new THREE.MeshPhysicalMaterial({ color:0x007a33, bumpMap:createGeometricBumpMap(), bumpScale:0.05, roughness:0.25, metalness:0.3, transmission:0, clearcoat:1, clearcoatRoughness:0.1, emissive:0x002200, emissiveIntensity:0.1, side:THREE.DoubleSide });
+            
+            STATE.materials.photoDefault = new THREE.MeshBasicMaterial({ 
+                map:createDefaultPhotoTexture(), 
+                color:0xffffff,
+                side: THREE.FrontSide
+            });
+
+            // Geometries
+            const sphereGeo = new THREE.SphereGeometry(0.6, 64, 64);
+            const bellGeo = createBellGeometry();
+            const caneGeo = createRefinedCandyCaneGeo();
+            const frameGeo = createFrameGeometry(1.3 + 0.5, 1.7 + 0.5); 
+            const photoGeo = new THREE.PlaneGeometry(1.3, 1.7);
+
+            let photosCreated = 0;
+
+            for(let i=0; i<CONFIG.particleCount; i++) {
+                let mesh; const r=Math.random();
+                
+                let photoProbability = (CONFIG.photoCountTarget - photosCreated) / (CONFIG.particleCount - i);
+                if(photoProbability < 0) photoProbability = 0;
+                
+                if (Math.random() < photoProbability) {
+                    const g = new THREE.Group();
+                    const f = new THREE.Mesh(frameGeo.clone(), STATE.materials.gold); 
+                    const p = new THREE.Mesh(photoGeo.clone(), STATE.materials.photoDefault.clone());
+                    p.position.z = 0.05; p.userData.isPhotoScreen=true;
+                    g.add(f); g.add(p);
+                    mesh = g; 
+                    mesh.userData.isPhoto=true; 
+                    mesh.userData.screenMesh=p;
+                    mesh.userData.frameMesh=f;
+                    g.scale.set(1.5,1.5,1.5);
+                    photosCreated++;
+                } else if(r>0.85) {
+                    mesh = new THREE.Mesh(caneGeo, STATE.materials.cane); 
+                    mesh.userData.isCane=true; 
+                    mesh.userData.originalScale=new THREE.Vector3(1.3, 1.3, 1.3);
+                } else if(r>0.6) {
+                    mesh = new THREE.Mesh(bellGeo, STATE.materials.gold);
+                } else if(r>0.3) {
+                    mesh = new THREE.Mesh(sphereGeo, STATE.materials.red);
+                } else {
+                    mesh = new THREE.Mesh(sphereGeo, STATE.materials.green);
+                }
+
+                // Spiral
+                const pct = i/CONFIG.particleCount; const th=pct*Math.PI*25; const y=(pct*CONFIG.treeHeight)-(CONFIG.treeHeight/2); const rad=(1-pct)*CONFIG.treeRadius;
+                const tx=rad*Math.cos(th), tz=rad*Math.sin(th);
+                
+                // Chaos Sphere
+                const u=Math.random(), v=Math.random(); const tc=2*Math.PI*u, pc=Math.acos(2*v-1); const rc=55*Math.cbrt(Math.random());
+                const cx=rc*Math.sin(pc)*Math.cos(tc), cy=rc*Math.sin(pc)*Math.sin(tc), cz=rc*Math.cos(pc);
+
+                mesh.userData = { ...mesh.userData, treePos:new THREE.Vector3(tx,y,tz), chaosPos:new THREE.Vector3(cx,cy,cz), originalScale:mesh.scale.clone() || new THREE.Vector3(1,1,1) };
+                
+                if(mesh.userData.isCane) {
+                     mesh.scale.copy(mesh.userData.originalScale);
+                }
+
+                mesh.position.copy(mesh.userData.treePos);
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                particleGroup.add(mesh);
+                STATE.objects.push(mesh);
+            }
+
+            // GPU Particles
+            const pCount=5000; const pGeo=new THREE.BufferGeometry();
+            const tPos=new Float32Array(pCount*3), cPos=new Float32Array(pCount*3), phs=new Float32Array(pCount);
+            for(let i=0; i<pCount; i++) {
+                let h = 1-Math.pow(Math.random(), 2.8); if(h<0.15 && Math.random()>0.4) h=0.5+Math.random()*0.5;
+                const y=(h*CONFIG.treeHeight)-(CONFIG.treeHeight/2); const mxR=(1-h)*(CONFIG.treeRadius*0.95);
+                const r=mxR*Math.sqrt(Math.random()), th=Math.random()*Math.PI*2;
+                tPos[i*3]=r*Math.cos(th); tPos[i*3+1]=y; tPos[i*3+2]=r*Math.sin(th);
+                
+                const u=Math.random(), v=Math.random(); const tc=2*Math.PI*u, pc=Math.acos(2*v-1); const rc=180*Math.cbrt(Math.random());
+                cPos[i*3]=rc*Math.sin(pc)*Math.cos(tc); cPos[i*3+1]=rc*Math.sin(pc)*Math.sin(tc); cPos[i*3+2]=rc*Math.cos(pc);
+                phs[i]=Math.random()*Math.PI*2;
+            }
+            pGeo.setAttribute('position', new THREE.BufferAttribute(tPos,3)); pGeo.setAttribute('aTreePos', new THREE.BufferAttribute(tPos,3)); pGeo.setAttribute('aChaosPos', new THREE.BufferAttribute(cPos,3)); pGeo.setAttribute('aPhase', new THREE.BufferAttribute(phs,1));
+            const pMat = new THREE.ShaderMaterial({ uniforms:{time:{value:0}, mixRatio:{value:0}, color:{value:new THREE.Color(0xffe57c)}}, vertexShader:sparkVertexShader, fragmentShader:sparkFragmentShader, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending });
+            STATE.innerSparkleSystem = new THREE.Points(pGeo, pMat);
+            particleGroup.add(STATE.innerSparkleSystem);
+
+            // Star
+            const starG = new THREE.Group();
+            const shp = new THREE.Shape(); for(let i=0;i<10;i++){ const r=(i%2===0)?2.5:1.2, a=i*Math.PI/5; shp[i===0?'moveTo':'lineTo'](r*Math.sin(a), r*Math.cos(a)); } shp.closePath();
+            const stGeo = new THREE.ExtrudeGeometry(shp, {depth:0.5, bevelEnabled:true, bevelThickness:0.3, bevelSize:0.1}); stGeo.center();
+            const stMat = new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xffd700, emissiveIntensity:4, roughness:0, metalness:1});
+            starG.add(new THREE.Mesh(stGeo, stMat)); starG.add(new THREE.PointLight(0xffaa00, 5, 60));
+            starG.position.set(0, CONFIG.treeHeight/2+3.5, 0); starG.userData={treePos:starG.position.clone(), chaosPos:new THREE.Vector3(0,60,0), isStar:true};
+            particleGroup.add(starG); STATE.objects.push(starG);
+        }
+
+        function generateAmbientDust() {
+            const count=3000, pos=[]; const geom=new THREE.BufferGeometry();
+            for(let i=0;i<count;i++){ const r=20+Math.random()*40, th=Math.random()*Math.PI*2, y=(Math.random()-0.5)*80; pos.push(r*Math.cos(th),y,r*Math.sin(th)); }
+            geom.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+            STATE.ambientDust = new THREE.Points(geom, new THREE.PointsMaterial({color:0xffd700, size:0.35, transparent:true, opacity:0.7, blending:THREE.AdditiveBlending, depthWrite:false}));
+            scene.add(STATE.ambientDust);
+        }
+
+        function updateMaterials(colors) {
+            if(colors.green) STATE.materials.green.color.set(colors.green);
+            if(colors.gold) STATE.materials.gold.color.set(colors.gold);
+            if(colors.red) STATE.materials.red.color.set(colors.red);
+            if(colors.white) STATE.materials.photoDefault.color.set(colors.white);
+            
+            gsap.to(particleGroup.scale, {x:1.1, y:1.1, z:1.1, duration:0.2, yoyo:true, repeat:1});
+        }
+
+        // --- Logic & Anim ---
+        function switchState(newState, targetObject=null) {
+            if(STATE.mode === newState && newState !== 'PHOTO_ZOOM') return;
+            STATE.mode = newState;
+            
+            // Bilingual Status Update
+            const statusEl = document.getElementById('current-state');
+            if(newState === 'TREE') statusEl.innerHTML = "圣诞树 (引力聚合)<br><span style='font-size:11px; font-weight:400; opacity:0.8;'>Gravity Tree</span>";
+            else if(newState === 'CHAOS') statusEl.innerHTML = "星云 (熵增扩散)<br><span style='font-size:11px; font-weight:400; opacity:0.8;'>Nebula Chaos</span>";
+            else if(newState === 'PHOTO_ZOOM') statusEl.innerHTML = "记忆详情 (时空聚焦)<br><span style='font-size:11px; font-weight:400; opacity:0.8;'>Memory Focus</span>";
+            
+            // Fix: Reset particle group rotation to 0 to ensure perfect alignment with screen (No perspective tilt)
+            if (newState === 'PHOTO_ZOOM' || newState === 'TREE') {
+                gsap.to(particleGroup.rotation, {x:0, y:0, z:0, duration:1.5, ease:"power2.out"});
+            }
+
+            // --- KEY FIX: DYNAMIC BLOOM/EXPOSURE TOGGLE ---
+            if(newState === 'PHOTO_ZOOM') {
+                // Disable bloom and reset exposure for clear, flat photo viewing
+                gsap.to(bloomPass, { strength: 0, duration: 1.0 }); 
+                gsap.to(renderer, { toneMappingExposure: 1.0, duration: 1.0 }); 
+            } else {
+                // Restore bloom and cinematic exposure for nebula/tree modes
+                gsap.to(bloomPass, { strength: CONFIG.bloomStrength, duration: 1.5 });
+                gsap.to(renderer, { toneMappingExposure: 1.2, duration: 1.5 });
+            }
+
+            STATE.objects.forEach(obj => {
+                let tPos = (newState === 'TREE') ? obj.userData.treePos : obj.userData.chaosPos;
+                let tRot = (newState === 'TREE' && obj.userData.isStar) ? {x:0,y:0} : {x:Math.random()*Math.PI, y:Math.random()*Math.PI};
+                let tScale = obj.userData.originalScale ? obj.userData.originalScale.clone() : new THREE.Vector3(1,1,1);
+
+                if(newState === 'PHOTO_ZOOM' && obj === targetObject) { 
+                    const currentHeight = targetObject.userData.screenMesh.geometry.parameters.height;
+                    const targetScale = 4.61 / currentHeight;
+                    
+                    tPos = new THREE.Vector3(0, 0, 0); 
+                    tRot = {x:0, y:0, z:0}; 
+                    tScale.multiplyScalar(targetScale);
+                }
+                
+                const isTarget = (newState==='PHOTO_ZOOM' && obj===targetObject);
+                const fade = (newState==='PHOTO_ZOOM' && obj!==targetObject);
+                
+                obj.traverse?.(c => { if(c.isMesh) gsap.to(c.material, {opacity:fade?0.05:1, transparent:fade, duration:0.8}); });
+                if(obj.material) gsap.to(obj.material, {opacity:fade?0.05:1, transparent:fade, duration:0.8});
+
+                gsap.to(obj.position, {x:tPos.x, y:tPos.y, z:tPos.z, duration:1.5, ease:"power4.out", stagger:isTarget?0:{amount:0.5, from:"random"}});
+                if(!obj.userData.isStar) gsap.to(obj.rotation, {x:tRot.x, y:tRot.y, z:tRot.z||0, duration:1.5, ease:"power2.out"});
+                else if (newState === 'TREE') gsap.to(obj.rotation, { y: "+="+Math.PI*2, duration: 6, repeat: -1, ease:"linear" });
+                
+                gsap.to(obj.scale, {x:tScale.x, y:tScale.y, z:tScale.z, duration:1.5, ease:"back.out(1.2)"});
+            });
+
+            if(STATE.innerSparkleSystem) {
+                const targetMix = (newState === 'TREE') ? 0 : 1;
+                const targetOpacity = (newState === 'PHOTO_ZOOM') ? 0.2 : 1.0;
+                STATE.innerSparkleSystem.material.opacity = targetOpacity;
+                gsap.to(STATE.innerSparkleSystem.material.uniforms.mixRatio, {value:targetMix, duration:3, ease:"power2.inOut"});
+            }
+
+            if(newState==='TREE') {
+                gsap.to(camera.position, {x:0, y:0, z:75, duration:2.0, ease:"power2.inOut"});
+                gsap.to(controls.target, {x:0,y:0,z:0, duration:2.0});
+            } else if(newState==='PHOTO_ZOOM') {
+                gsap.to(camera.position, {x:0, y:0, z:12, duration:1.2, ease:"power2.out"});
+                gsap.to(controls.target, {x:0,y:0,z:0, duration:1.2});
+            }
+        }
+
+        function handleImageUpload(e) {
+            const files = Array.from(e.target.files); 
+            if(!files.length) return;
+            
+            const loader = new THREE.TextureLoader(); 
+            const targets = STATE.objects.filter(o=>o.userData.isPhoto);
+            
+            let assignments = [];
+            
+            while (assignments.length < targets.length) {
+                let deck = files.map((_, i) => i);
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+                assignments.push(...deck);
+            }
+            
+            assignments = assignments.slice(0, targets.length);
+            
+            targets.forEach((target, i) => {
+                const fileIndex = assignments[i];
+                const file = files[fileIndex];
+                
+                loader.load(URL.createObjectURL(file), tex => {
+                    tex.colorSpace = THREE.SRGBColorSpace; 
+                    const screen = target.userData.screenMesh;
+                    const frame = target.userData.frameMesh;
+
+                    const img = tex.image;
+                    const aspect = img.width / img.height;
+                    
+                    const newH = 1.7;
+                    const newW = newH * aspect;
+                    
+                    screen.geometry.dispose();
+                    frame.geometry.dispose();
+                    
+                    screen.geometry = new THREE.PlaneGeometry(newW, newH);
+                    frame.geometry = createFrameGeometry(newW + 0.5, newH + 0.5); 
+
+                    screen.material.map = tex; 
+                    screen.material.emissiveMap = null; 
+                    screen.material.needsUpdate = true;
+                });
+            });
+
+            window.showToast(`已注入 ${files.length} 个记忆片段<br><span style='font-size:12px'>${files.length} Memories Injected</span>`);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate); controls.update(); composer.render();
+            if(starPoints) starPoints.rotation.y = time*0.0002;
+            if(STATE.innerSparkleSystem) STATE.innerSparkleSystem.material.uniforms.time.value = time*0.001;
+            if(STATE.ambientDust) STATE.ambientDust.rotation.y = -time*0.0001;
+        }
+        function onWindowResize() { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); composer.setSize(window.innerWidth,window.innerHeight); }
+    </script>
+</body>
+</html>
